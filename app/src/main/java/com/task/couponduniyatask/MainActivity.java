@@ -17,6 +17,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.gson.Gson;
+import com.rey.material.widget.Button;
 import com.task.couponduniyatask.adapter.HomeAdapter;
 import com.task.couponduniyatask.model.RestaurantPojo;
 import com.task.couponduniyatask.utility.Utils;
@@ -39,9 +40,10 @@ public class MainActivity extends AppCompatActivity implements
     private Toolbar toolbar;
     private Context context;
     private RecyclerView mRecyclerView;
-    private LinearLayout mLodaingPanel;
+    private LinearLayout mLoadingPanel;
     private List<RestaurantPojo> lstRestaurantPojoList;
     private HomeAdapter homeAdapter;
+    private Button retryButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,10 +54,26 @@ public class MainActivity extends AppCompatActivity implements
         updateValuesFromBundle(savedInstanceState);
         buildGoogleApiClient();
         initComponents();
+        registerEvents();
+        callGetRestarentListTask();
+    }
+
+    private void registerEvents() {
+        retryButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                callGetRestarentListTask();
+            }
+        });
+    }
+
+    private void callGetRestarentListTask() {
         if (Utils.isNetwrokAvial(context)) {
             new GetRestuarentList().execute();
         } else {
             Utils.showLongToast(context, getResources().getString(R.string.error_internet));
+            mRecyclerView.setVisibility(View.GONE);
+            retryButton.setVisibility(View.VISIBLE);
         }
     }
 
@@ -96,7 +114,8 @@ public class MainActivity extends AppCompatActivity implements
 
     private void initComponents() {
         mRecyclerView = (RecyclerView) findViewById(R.id.home_act_rv);
-        mLodaingPanel = (LinearLayout) findViewById(R.id.home_act_loadingPanel);
+        mLoadingPanel = (LinearLayout) findViewById(R.id.home_act_loadingPanel);
+        retryButton = (Button) findViewById(R.id.home_act_retry_btn);
         lstRestaurantPojoList = new ArrayList<>();
         LinearLayoutManager layoutManager = new LinearLayoutManager(context);
         mRecyclerView.setLayoutManager(layoutManager);
@@ -223,10 +242,9 @@ public class MainActivity extends AppCompatActivity implements
         @Override
         protected void onPostExecute(Void result) {
             super.onPostExecute(result);
-            mLodaingPanel.setVisibility(View.GONE);
-            mRecyclerView.setVisibility(View.VISIBLE);
+            mLoadingPanel.setVisibility(View.GONE);
             if (!lstRestaurantPojoList.isEmpty()) {
-
+                mRecyclerView.setVisibility(View.VISIBLE);
                 Collections.sort(lstRestaurantPojoList,
                         new Comparator<RestaurantPojo>() {
                             public int compare(RestaurantPojo o1,
@@ -243,14 +261,17 @@ public class MainActivity extends AppCompatActivity implements
                         });
 
                 homeAdapter.notifyDataSetChanged();
+            } else {
+                retryButton.setVisibility(View.VISIBLE);
             }
         }
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            mLodaingPanel.setVisibility(View.VISIBLE);
+            mLoadingPanel.setVisibility(View.VISIBLE);
             mRecyclerView.setVisibility(View.GONE);
+            retryButton.setVisibility(View.GONE);
         }
     }
 }
